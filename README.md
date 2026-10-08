@@ -77,7 +77,7 @@ All inputs are validated on both **client (browser)** and **server (Flask)**:
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/fair-loan-predictor.git
+git clone https://github.com/harmohitsingh/fair-loan-predictor.git
 cd fair-loan-predictor
 ```
 
