@@ -1,0 +1,53 @@
+{
+  "best_model": "Logistic Regression",
+  "model_results": {
+    "Random Forest": {
+      "accuracy": 0.99,
+      "auc": 0.9994,
+      "cv_mean": 0.9906
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.9925,
+      "auc": 0.9963,
+      "cv_mean": 0.9856
+    },
+    "Logistic Regression": {
+      "accuracy": 0.9875,
+      "auc": 0.9994,
+      "cv_mean": 0.9938
+    }
+  },
+  "feature_names": [
+    "Gender",
+    "Married",
+    "Dependents",
+    "Education",
+    "Self_Employed",
+    "Property_Area",
+    "ApplicantIncome",
+    "CoapplicantIncome",
+    "LoanAmount",
+    "Loan_Amount_Term",
+    "Credit_History",
+    "TotalIncome",
+    "LoanToIncome",
+    "EMI"
+  ],
+  "feature_importances": {},
+  "fairness_report": {
+    "Female": {
+      "approval_rate": 74.8,
+      "true_positive_rate": 97.6,
+      "false_positive_rate": 0.0,
+      "total": 163
+    },
+    "Male": {
+      "approval_rate": 78.9,
+      "true_positive_rate": 100.0,
+      "false_positive_rate": 3.8,
+      "total": 237
+    }
+  },
+  "dataset_size": 2000,
+  "approval_rate": 77.5
+}

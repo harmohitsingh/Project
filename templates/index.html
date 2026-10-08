@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fair Loan Predictor · SDG 10</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --card:     #20243a;
+      --border:   #2e3350;
+      --accent:   #6c63ff;
+      --accent2:  #00d4aa;
+      --danger:   #ff5e6c;
+      --warn:     #f5a623;
+      --text:     #e8eaf6;
+      --muted:    #8892b0;
+      --grad1:    linear-gradient(135deg, #6c63ff 0%, #4ecdc4 100%);
+      --grad2:    linear-gradient(135deg, #ff5e6c 0%, #f5a623 100%);
+      --approved: #00d4aa;
+      --rejected: #ff5e6c;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 0.7rem;
+      font-weight: 700; font-size: 1.1rem; letter-spacing: 0.3px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--grad1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .sdg-badge {
+      background: linear-gradient(135deg,#dd1367,#fd6925);
+      color: #fff; font-size: 0.7rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px;
+    }
+    nav { display: flex; gap: 0.2rem; }
+    nav button {
+      background: none; border: none; color: var(--muted);
+      padding: 6px 14px; border-radius: 6px; cursor: pointer;
+      font-size: 0.88rem; transition: all 0.2s;
+    }
+    nav button:hover, nav button.active { color: var(--text); background: var(--card); }
+
+    /* ── Layout ── */
+    .page { display: none; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* ── Hero Banner ── */
+    .hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem 3rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 250px; height: 250px;
+      background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-title { font-size: 2rem; font-weight: 800; line-height: 1.2; }
+    .hero-title span { background: var(--grad1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; max-width: 500px; }
+    .hero-stats { display: flex; gap: 2rem; }
+    .hstat { text-align: center; }
+    .hstat-val { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+    .hstat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── Stat Cards ── */
+    .cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.4rem 1.5rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .stat-card .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+    .stat-card .value { font-size: 1.7rem; font-weight: 800; }
+    .stat-card .sub   { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* ── Two-column form layout ── */
+    .form-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    @media (max-width: 800px) { .form-layout { grid-template-columns: 1fr; } }
+
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+    .form-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+    .form-card h2 .icon { font-size: 1.2rem; }
+
+    .field { margin-bottom: 1.2rem; }
+    .field label {
+      display: block; font-size: 0.8rem; font-weight: 600;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.4px; margin-bottom: 0.4rem;
+    }
+    .field label .req { color: var(--danger); margin-left: 2px; }
+    .field label .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); font-size: 0.75rem; }
+
+    input[type="number"], select {
+      width: 100%;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      appearance: none;
+    }
+    input[type="number"]:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,99,255,0.15);
+    }
+    input.error, select.error { border-color: var(--danger) !important; }
+    input.ok, select.ok { border-color: var(--accent2) !important; }
+
+    .field-error { font-size: 0.78rem; color: var(--danger); margin-top: 0.3rem; display: none; }
+    .field-error.show { display: block; }
+
+    /* Toggle group (for binary options) */
+    .toggle-group { display: flex; gap: 0.5rem; }
+    .toggle-btn {
+      flex: 1; padding: 9px; border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--card); color: var(--muted);
+      cursor: pointer; font-size: 0.88rem; font-weight: 600;
+      transition: all 0.2s; text-align: center;
+    }
+    .toggle-btn:hover { border-color: var(--accent); color: var(--text); }
+    .toggle-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .toggle-btn.selected-green { background: var(--accent2); border-color: var(--accent2); color: #000; }
+
+    /* Segment control (for multi-option) */
+    .segment { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .seg-btn {
+      padding: 7px 14px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--card); color: var(--muted);
+      cursor: pointer; font-size: 0.82rem; font-weight: 600;
+      transition: all 0.2s;
+    }
+    .seg-btn:hover { border-color: var(--accent); color: var(--text); }
+    .seg-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Slider */
+    .slider-wrap { position: relative; }
+    input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    .slider-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem;
+    }
+    .slider-val {
+      text-align: center; font-size: 1rem; font-weight: 700;
+      color: var(--accent); margin-top: 0.3rem;
+    }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%; padding: 14px;
+      background: var(--grad1);
+      border: none; border-radius: 10px;
+      color: #fff; font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: opacity 0.2s, transform 0.15s;
+      margin-top: 1rem; letter-spacing: 0.3px;
+    }
+    .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-reset {
+      width: 100%; padding: 10px;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted); font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; margin-top: 0.5rem;
+    }
+    .btn-reset:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ── Result Panel ── */
+    #result-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-top: 2rem;
+      animation: slideUp 0.4s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; }
+    .result-badge {
+      font-size: 2.5rem; font-weight: 900;
+      padding: 0.5rem 1.8rem;
+      border-radius: 12px;
+      letter-spacing: 1px;
+    }
+    .result-badge.approved { background: rgba(0,212,170,0.15); color: var(--approved); border: 2px solid var(--approved); }
+    .result-badge.rejected { background: rgba(255,94,108,0.15); color: var(--rejected); border: 2px solid var(--rejected); }
+
+    .result-meta .main { font-size: 1.3rem; font-weight: 700; }
+    .result-meta .sub  { color: var(--muted); font-size: 0.9rem; }
+
+    /* Confidence bar */
+    .conf-wrap { margin: 1.5rem 0; }
+    .conf-label { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .conf-bar { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+    .conf-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
+    .conf-fill.approved { background: var(--grad1); }
+    .conf-fill.rejected { background: var(--grad2); }
+
+    /* Derived metrics */
+    .derived-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; margin: 1.5rem 0; }
+    .derived-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.9rem 1rem; text-align: center;
+    }
+    .derived-card .dval { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
+    .derived-card .dlbl { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* Factors */
+    .factors-title { font-size: 0.85rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.8rem; }
+    .factor-row {
+      display: flex; align-items: flex-start; gap: 0.8rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .factor-row:last-child { border-bottom: none; }
+    .factor-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+    }
+    .factor-dot.positive { background: var(--approved); }
+    .factor-dot.negative { background: var(--rejected); }
+    .factor-dot.neutral  { background: var(--warn); }
+    .factor-name { font-size: 0.85rem; font-weight: 700; }
+    .factor-note { font-size: 0.8rem; color: var(--muted); margin-top: 1px; }
+
+    /* ── Dashboard / Fairness Page ── */
+    .section-title {
+      font-size: 1.2rem; font-weight: 700; margin-bottom: 1.2rem;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.5rem;
+    }
+    .panel h3 { font-size: 0.9rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 1rem; }
+
+    /* Bar chart */
+    .bar-wrap { display: flex; flex-direction: column; gap: 0.6rem; }
+    .bar-row { display: flex; align-items: center; gap: 0.7rem; }
+    .bar-label { width: 130px; font-size: 0.8rem; color: var(--muted); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; background: var(--grad1); transition: width 1.2s ease; }
+    .bar-pct { font-size: 0.78rem; font-weight: 700; color: var(--accent); width: 40px; }
+
+    /* Fairness table */
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+    td { padding: 10px 12px; border-bottom: 1px solid rgba(46,51,80,0.5); }
+    tr:hover td { background: var(--card); }
+    .badge-green { background: rgba(0,212,170,0.15); color: var(--approved); padding: 2px 8px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+    .badge-red   { background: rgba(255,94,108,0.15); color: var(--rejected); padding: 2px 8px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+    .badge-warn  { background: rgba(245,166,35,0.15); color: var(--warn); padding: 2px 8px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+
+    /* Model comparison */
+    .model-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.8rem 0; border-bottom: 1px solid var(--border);
+    }
+    .model-row:last-child { border-bottom: none; }
+    .model-name { font-size: 0.88rem; font-weight: 700; }
+    .model-metrics { display: flex; gap: 1rem; }
+    .model-metric { text-align: center; }
+    .model-metric .mv { font-size: 0.95rem; font-weight: 800; color: var(--accent); }
+    .model-metric .ml { font-size: 0.68rem; color: var(--muted); }
+    .best-tag { background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.9rem 1.5rem;
+      font-size: 0.88rem; color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transform: translateY(20px); opacity: 0;
+      transition: all 0.3s; pointer-events: none; z-index: 999;
+      max-width: 320px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Loader ── */
+    .loader {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── SDG info strip ── */
+    .sdg-strip {
+      background: linear-gradient(135deg, rgba(221,19,103,0.1), rgba(253,105,37,0.1));
+      border: 1px solid rgba(221,19,103,0.3);
+      border-radius: 10px; padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .sdg-num { font-size: 2rem; font-weight: 900; color: #fd6925; }
+    .sdg-text .t { font-weight: 700; }
+    .sdg-text .s { font-size: 0.83rem; color: var(--muted); }
+
+    /* ── About Page ── */
+    .about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; }
+    .about-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem;
+    }
+    .about-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
+    .about-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.7; }
+    .about-card ul { font-size: 0.85rem; color: var(--muted); line-height: 2; padding-left: 1.2rem; }
+
+    /* ── Input live preview ── */
+    .live-preview {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem 1.2rem; margin-top: 1rem;
+      font-size: 0.82rem;
+    }
+    .live-preview .pv-title { font-weight: 700; margin-bottom: 0.6rem; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; }
+    .pv-row { display: flex; justify-content: space-between; padding: 2px 0; }
+    .pv-key { color: var(--muted); }
+    .pv-val { font-weight: 600; }
+
+    /* ── Gauge ── */
+    .gauge-wrap { display: flex; justify-content: center; margin: 1rem 0; }
+    .gauge-svg text { font-family: 'Segoe UI', sans-serif; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏦</div>
+    <span>Fair Loan Predictor</span>
+    <span class="sdg-badge">SDG 10</span>
+  </div>
+  <nav>
+    <button class="active" onclick="showPage('predict', this)">Predict</button>
+    <button onclick="showPage('dashboard', this)">Dashboard</button>
+    <button onclick="showPage('fairness', this)">Fairness Audit</button>
+    <button onclick="showPage('about', this)">About</button>
+  </nav>
+</header>
+
+<!-- ════════════════ PAGE: PREDICT ════════════════ -->
+<div id="page-predict" class="page active">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div>
+      <div class="hero-title">Check Your <span>Loan Eligibility</span></div>
+      <div class="hero-sub">
+        AI-powered assessment using 2,000 realistic Indian loan applications — with built-in fairness auditing
+        to ensure no gender, education, or social bias affects your result.
+      </div>
+    </div>
+    <div class="hero-stats" id="hero-stats">
+      <div class="hstat"><div class="hstat-val" id="hs-total">—</div><div class="hstat-label">Applications</div></div>
+      <div class="hstat"><div class="hstat-val" id="hs-rate">—</div><div class="hstat-label">Approval Rate</div></div>
+      <div class="hstat"><div class="hstat-val" id="hs-model">—</div><div class="hstat-label">Best Model</div></div>
+    </div>
+  </div>
+
+  <div class="form-layout">
+    <!-- Left: Personal Details -->
+    <div>
+      <div class="form-card">
+        <h2><span class="icon">👤</span> Personal Details</h2>
+
+        <div class="field">
+          <label>Gender <span class="req">*</span></label>
+          <div class="toggle-group">
+            <button class="toggle-btn selected" data-field="gender" data-val="Male" onclick="selectToggle(this)">♂ Male</button>
+            <button class="toggle-btn" data-field="gender" data-val="Female" onclick="selectToggle(this)">♀ Female</button>
+          </div>
+          <input type="hidden" id="gender" value="Male" />
+          <div class="field-error" id="err-gender"></div>
+        </div>
+
+        <div class="field">
+          <label>Marital Status <span class="req">*</span></label>
+          <div class="toggle-group">
+            <button class="toggle-btn selected" data-field="married" data-val="Yes" onclick="selectToggle(this)">💍 Married</button>
+            <button class="toggle-btn" data-field="married" data-val="No" onclick="selectToggle(this)">🚶 Single</button>
+          </div>
+          <input type="hidden" id="married" value="Yes" />
+          <div class="field-error" id="err-married"></div>
+        </div>
+
+        <div class="field">
+          <label>Dependents <span class="req">*</span> <span class="hint">— number of family members financially dependent</span></label>
+          <div class="segment" id="seg-dependents">
+            <button class="seg-btn selected" data-val="0" onclick="selectSeg('dependents', this)">0</button>
+            <button class="seg-btn" data-val="1" onclick="selectSeg('dependents', this)">1</button>
+            <button class="seg-btn" data-val="2" onclick="selectSeg('dependents', this)">2</button>
+            <button class="seg-btn" data-val="3+" onclick="selectSeg('dependents', this)">3+</button>
+          </div>
+          <input type="hidden" id="dependents" value="0" />
+          <div class="field-error" id="err-dependents"></div>
+        </div>
+
+        <div class="field">
+          <label>Education <span class="req">*</span></label>
+          <div class="toggle-group">
+            <button class="toggle-btn selected" data-field="education" data-val="Graduate" onclick="selectToggle(this)">🎓 Graduate</button>
+            <button class="toggle-btn" data-field="education" data-val="Not Graduate" onclick="selectToggle(this)">📚 Not Graduate</button>
+          </div>
+          <input type="hidden" id="education" value="Graduate" />
+          <div class="field-error" id="err-education"></div>
+        </div>
+
+        <div class="field">
+          <label>Self Employed <span class="req">*</span></label>
+          <div class="toggle-group">
+            <button class="toggle-btn" data-field="self_employed" data-val="Yes" onclick="selectToggle(this)">💼 Yes</button>
+            <button class="toggle-btn selected" data-field="self_employed" data-val="No" onclick="selectToggle(this)">🏢 No (Salaried)</button>
+          </div>
+          <input type="hidden" id="self_employed" value="No" />
+          <div class="field-error" id="err-self_employed"></div>
+        </div>
+
+        <div class="field">
+          <label>Property Area <span class="req">*</span></label>
+          <div class="segment" id="seg-property_area">
+            <button class="seg-btn" data-val="Urban" onclick="selectSeg('property_area', this)">🏙 Urban</button>
+            <button class="seg-btn selected" data-val="Semiurban" onclick="selectSeg('property_area', this)">🏘 Semiurban</button>
+            <button class="seg-btn" data-val="Rural" onclick="selectSeg('property_area', this)">🌾 Rural</button>
+          </div>
+          <input type="hidden" id="property_area" value="Semiurban" />
+          <div class="field-error" id="err-property_area"></div>
+        </div>
+
+        <div class="field">
+          <label>Credit History <span class="req">*</span> <span class="hint">— have you repaid past loans?</span></label>
+          <div class="toggle-group">
+            <button class="toggle-btn selected-green selected" data-field="credit_history" data-val="1" onclick="selectToggle(this)">✅ Good (repaid)</button>
+            <button class="toggle-btn" data-field="credit_history" data-val="0" onclick="selectToggle(this)">❌ Bad / None</button>
+          </div>
+          <input type="hidden" id="credit_history" value="1" />
+          <div class="field-error" id="err-credit_history"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Financial Details -->
+    <div>
+      <div class="form-card">
+        <h2><span class="icon">💰</span> Financial Details</h2>
+
+        <div class="field">
+          <label>Applicant Monthly Income (₹) <span class="req">*</span></label>
+          <div class="slider-wrap">
+            <input type="range" id="applicant_income_slider" min="10000" max="500000" step="1000" value="50000"
+              oninput="syncSlider('applicant_income', this.value)" />
+            <div class="slider-label"><span>₹10,000</span><span>₹5,00,000</span></div>
+            <div class="slider-val" id="applicant_income_display">₹50,000</div>
+          </div>
+          <input type="number" id="applicant_income" value="50000" min="10000" max="500000"
+            placeholder="e.g. 50000" oninput="syncInput('applicant_income', this.value); updatePreview()" />
+          <div class="field-error" id="err-applicant_income"></div>
+        </div>
+
+        <div class="field">
+          <label>Co-Applicant Monthly Income (₹) <span class="hint">— spouse / co-borrower (0 if none)</span></label>
+          <div class="slider-wrap">
+            <input type="range" id="coapplicant_income_slider" min="0" max="300000" step="1000" value="0"
+              oninput="syncSlider('coapplicant_income', this.value)" />
+            <div class="slider-label"><span>₹0</span><span>₹3,00,000</span></div>
+            <div class="slider-val" id="coapplicant_income_display">₹0</div>
+          </div>
+          <input type="number" id="coapplicant_income" value="0" min="0" max="300000"
+            placeholder="0 if no co-applicant" oninput="syncInput('coapplicant_income', this.value); updatePreview()" />
+          <div class="field-error" id="err-coapplicant_income"></div>
+        </div>
+
+        <div class="field">
+          <label>Loan Amount Required (₹ thousands) <span class="req">*</span> <span class="hint">— e.g. 5000 = ₹50 Lakh, 10000 = ₹1 Crore</span></label>
+          <div class="slider-wrap">
+            <input type="range" id="loan_amount_slider" min="500" max="20000" step="100" value="3000"
+              oninput="syncSlider('loan_amount', this.value)" />
+            <div class="slider-label"><span>₹5L</span><span>₹2Cr</span></div>
+            <div class="slider-val" id="loan_amount_display">₹3000K</div>
+          </div>
+          <input type="number" id="loan_amount" value="3000" min="500" max="20000"
+            placeholder="e.g. 3000 (= Rs.30 Lakh)" oninput="syncInput('loan_amount', this.value); updatePreview()" />
+          <div class="field-error" id="err-loan_amount"></div>
+        </div>
+
+        <div class="field">
+          <label>Loan Tenure <span class="req">*</span></label>
+          <div class="segment" id="seg-loan_term">
+            <button class="seg-btn" data-val="120" onclick="selectSeg('loan_term', this)">10 yrs</button>
+            <button class="seg-btn" data-val="180" onclick="selectSeg('loan_term', this)">15 yrs</button>
+            <button class="seg-btn" data-val="240" onclick="selectSeg('loan_term', this)">20 yrs</button>
+            <button class="seg-btn" data-val="300" onclick="selectSeg('loan_term', this)">25 yrs</button>
+            <button class="seg-btn selected" data-val="360" onclick="selectSeg('loan_term', this)">30 yrs</button>
+          </div>
+          <input type="hidden" id="loan_term" value="360" />
+          <div class="field-error" id="err-loan_term"></div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="live-preview">
+          <div class="pv-title">📊 Live Financial Summary</div>
+          <div class="pv-row"><span class="pv-key">Total Income</span><span class="pv-val" id="pv-total">₹5,000/mo</span></div>
+          <div class="pv-row"><span class="pv-key">Monthly EMI</span><span class="pv-val" id="pv-emi">₹417/mo</span></div>
+          <div class="pv-row"><span class="pv-key">EMI Burden</span><span class="pv-val" id="pv-ratio">8.3%</span></div>
+          <div class="pv-row"><span class="pv-key">Loan-to-Income</span><span class="pv-val" id="pv-lti">0.5×</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <button class="btn-submit" id="btn-predict" onclick="submitPrediction()">
+          🔍 Predict Loan Eligibility
+        </button>
+        <button class="btn-reset" onclick="resetForm()">↺ Reset All Fields</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Panel -->
+  <div id="result-panel">
+    <div class="result-header">
+      <div class="result-badge" id="res-badge">—</div>
+      <div class="result-meta">
+        <div class="main" id="res-main">—</div>
+        <div class="sub" id="res-sub">—</div>
+      </div>
+    </div>
+
+    <div class="conf-wrap">
+      <div class="conf-label">
+        <span>Approval Probability</span>
+        <span id="res-conf">—</span>
+      </div>
+      <div class="conf-bar"><div class="conf-fill" id="res-bar" style="width:0%"></div></div>
+    </div>
+
+    <div class="derived-grid" id="res-derived"></div>
+
+    <div class="factors-title">Key Factors Influencing This Decision</div>
+    <div id="res-factors"></div>
+  </div>
+
+</div>
+
+<!-- ════════════════ PAGE: DASHBOARD ════════════════ -->
+<div id="page-dashboard" class="page">
+  <div class="sdg-strip">
+    <div class="sdg-num">10</div>
+    <div class="sdg-text">
+      <div class="t">SDG 10 — Reduced Inequalities</div>
+      <div class="s">This tool aims to identify and reduce systemic bias in financial lending, promoting equal access to credit regardless of gender, education, or background.</div>
+    </div>
+  </div>
+
+  <div class="cards-row" id="dash-cards"></div>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>📊 Feature Importance</h3>
+      <div class="bar-wrap" id="feature-bars"></div>
+    </div>
+    <div class="panel">
+      <h3>🤖 Model Comparison</h3>
+      <div id="model-compare"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ PAGE: FAIRNESS AUDIT ════════════════ -->
+<div id="page-fairness" class="page">
+  <div class="section-title">⚖️ Fairness Audit Report</div>
+  <p style="color:var(--muted); font-size:0.88rem; margin-bottom:1.5rem;">
+    Fairness analysis of the trained model across gender groups. A fair model should show similar approval rates,
+    true positive rates, and false positive rates across all groups. Significant divergence indicates potential bias.
+  </p>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>📋 Group Metrics</h3>
+      <table id="fairness-table">
+        <thead>
+          <tr>
+            <th>Group</th><th>n</th><th>Approval Rate</th><th>True Pos Rate</th><th>False Pos Rate</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="fairness-body"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h3>📈 Approval Rate by Group</h3>
+      <div class="bar-wrap" id="fairness-bars"></div>
+      <div style="margin-top:1.5rem;">
+        <h3>🎯 Fairness Interpretation</h3>
+        <div id="fairness-interpretation" style="font-size:0.85rem; color:var(--muted); line-height:1.8;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:1.5rem;">
+    <h3>📚 Fairness Metrics Explained</h3>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-top:0.5rem;">
+      <div>
+        <div style="font-weight:700; font-size:0.88rem; margin-bottom:0.3rem;">Approval Rate</div>
+        <div style="font-size:0.8rem; color:var(--muted);">% of applicants in this group who were approved. Should be similar across groups for equal opportunity.</div>
+      </div>
+      <div>
+        <div style="font-weight:700; font-size:0.88rem; margin-bottom:0.3rem;">True Positive Rate (TPR)</div>
+        <div style="font-size:0.8rem; color:var(--muted);">% of qualified applicants correctly approved. Measures equal opportunity — divergence means some groups face higher rejection despite being qualified.</div>
+      </div>
+      <div>
+        <div style="font-weight:700; font-size:0.88rem; margin-bottom:0.3rem;">False Positive Rate (FPR)</div>
+        <div style="font-size:0.8rem; color:var(--muted);">% of unqualified applicants incorrectly approved. Should be consistent — higher FPR for one group may indicate the model is biased in their favor.</div>
+      </div>
+      <div>
+        <div style="font-weight:700; font-size:0.88rem; margin-bottom:0.3rem;">Bias Threshold</div>
+        <div style="font-size:0.8rem; color:var(--muted);">A difference of more than 10% between groups in any metric is flagged as potential bias requiring investigation.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ PAGE: ABOUT ════════════════ -->
+<div id="page-about" class="page">
+  <div class="section-title">ℹ️ About This Project</div>
+
+  <div class="sdg-strip">
+    <div class="sdg-num">10</div>
+    <div class="sdg-text">
+      <div class="t">United Nations SDG 10 — Reduced Inequalities</div>
+      <div class="s">"Reduce inequality within and among countries" — by 2030, empower and promote social, economic, and political inclusion of all, irrespective of age, sex, disability, race, ethnicity, origin, religion, or economic status.</div>
+    </div>
+  </div>
+
+  <div class="about-grid">
+    <div class="about-card">
+      <h3>🎯 Project Goal</h3>
+      <p>Build an ML-powered loan approval predictor that not only predicts fairly but also <strong>audits itself for bias</strong> across gender, education, and other sensitive attributes — helping identify and challenge systemic discrimination in financial lending.</p>
+    </div>
+    <div class="about-card">
+      <h3>📦 Dataset</h3>
+      <p>Realistic Indian Home Loan Dataset — 2,000 applications generated from real-world Indian income distributions (Rs.10K–Rs.5L/month), loan amounts (Rs.5L–Rs.2Cr), and bank approval logic including FOIR, loan-to-income ratio, and credit scoring.</p>
+    </div>
+    <div class="about-card">
+      <h3>🤖 ML Pipeline</h3>
+      <ul>
+        <li>Label encoding of categorical features</li>
+        <li>Feature engineering: EMI, LTI ratio, total income</li>
+        <li>StandardScaler normalization</li>
+        <li>3 models compared: RF, GBT, LR</li>
+        <li>Best selected by AUC-ROC score</li>
+        <li>5-fold cross-validation</li>
+      </ul>
+    </div>
+    <div class="about-card">
+      <h3>⚖️ Fairness Features</h3>
+      <ul>
+        <li>Post-prediction bias audit by gender</li>
+        <li>Approval rate parity analysis</li>
+        <li>True positive rate equality check</li>
+        <li>False positive rate monitoring</li>
+        <li>Explainability via key factor breakdown</li>
+      </ul>
+    </div>
+    <div class="about-card">
+      <h3>🛡️ Input Validation</h3>
+      <ul>
+        <li>All categorical fields validated against allowed values</li>
+        <li>Numeric fields have strict min/max bounds</li>
+        <li>Business rule: EMI cannot exceed 90% of income</li>
+        <li>Live financial preview updates in real time</li>
+      </ul>
+    </div>
+    <div class="about-card">
+      <h3>🔧 Tech Stack</h3>
+      <ul>
+        <li>Python 3.11 + scikit-learn</li>
+        <li>Flask (REST API backend)</li>
+        <li>Vanilla JS + CSS (no frameworks)</li>
+        <li>Realistic Indian Loan Dataset (2,000 records)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── Page Navigation ──
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'dashboard') loadDashboard();
+  if (id === 'fairness') loadFairness();
+}
+
+// ── Toggle Buttons ──
+function selectToggle(btn) {
+  const field = btn.dataset.field;
+  document.querySelectorAll(`[data-field="${field}"]`).forEach(b => b.classList.remove('selected', 'selected-green'));
+  btn.classList.add('selected');
+  if (btn.dataset.val === '1' && field === 'credit_history') btn.classList.add('selected-green');
+  document.getElementById(field).value = btn.dataset.val;
+  clearFieldError(field);
+  updatePreview();
+}
+
+// ── Segment Buttons ──
+function selectSeg(field, btn) {
+  const container = document.getElementById('seg-' + field);
+  container.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(field).value = btn.dataset.val;
+  clearFieldError(field);
+  updatePreview();
+}
+
+// ── Slider ↔ Input Sync ──
+function syncSlider(field, val) {
+  document.getElementById(field).value = val;
+  updateSliderDisplay(field, val);
+  updatePreview();
+}
+
+function syncInput(field, val) {
+  const slider = document.getElementById(field + '_slider');
+  if (slider) slider.value = val;
+  updateSliderDisplay(field, val);
+}
+
+function updateSliderDisplay(field, val) {
+  const disp = document.getElementById(field + '_display');
+  if (!disp) return;
+  const num = parseFloat(val);
+  if (field === 'loan_amount') {
+    disp.textContent = '₹' + num + 'K';
+  } else {
+    disp.textContent = '₹' + num.toLocaleString('en-IN');
+  }
+}
+
+// ── Live Preview ──
+function updatePreview() {
+  const ai  = parseFloat(document.getElementById('applicant_income').value) || 0;
+  const ca  = parseFloat(document.getElementById('coapplicant_income').value) || 0;
+  const la  = parseFloat(document.getElementById('loan_amount').value) || 0;
+  const lt  = parseFloat(document.getElementById('loan_term').value) || 360;
+
+  const total = ai + ca;
+  const emi   = lt > 0 ? (la * 1000) / lt : 0;
+  const ratio = ai > 0 ? (emi / ai * 100) : 0;
+  const lti   = total > 0 ? la / (total / 12) : 0;
+
+  document.getElementById('pv-total').textContent = '₹' + total.toLocaleString('en-IN') + '/mo';
+  document.getElementById('pv-emi').textContent   = '₹' + Math.round(emi).toLocaleString('en-IN') + '/mo';
+
+  const ratioEl = document.getElementById('pv-ratio');
+  ratioEl.textContent = ratio.toFixed(1) + '%';
+  ratioEl.style.color = ratio > 50 ? 'var(--danger)' : ratio > 30 ? 'var(--warn)' : 'var(--accent2)';
+
+  const ltiEl = document.getElementById('pv-lti');
+  ltiEl.textContent = lti.toFixed(1) + '×';
+  ltiEl.style.color = lti > 5 ? 'var(--danger)' : lti > 3 ? 'var(--warn)' : 'var(--accent2)';
+}
+
+// ── Validation ──
+function clearFieldError(field) {
+  const el = document.getElementById('err-' + field);
+  if (el) { el.textContent = ''; el.classList.remove('show'); }
+  const inp = document.getElementById(field);
+  if (inp) inp.classList.remove('error', 'ok');
+}
+
+function showFieldError(field, msg) {
+  const el = document.getElementById('err-' + field);
+  if (el) { el.textContent = msg; el.classList.add('show'); }
+  const inp = document.getElementById(field);
+  if (inp) inp.classList.add('error');
+}
+
+function clientValidate() {
+  let valid = true;
+
+  const ai = parseFloat(document.getElementById('applicant_income').value);
+  if (!ai || ai < 10000 || ai > 500000) {
+    showFieldError('applicant_income', 'Must be between Rs.10,000 and Rs.5,00,000');
+    valid = false;
+  } else clearFieldError('applicant_income');
+
+  const ca = parseFloat(document.getElementById('coapplicant_income').value);
+  if (isNaN(ca) || ca < 0 || ca > 300000) {
+    showFieldError('coapplicant_income', 'Must be between Rs.0 and Rs.3,00,000');
+    valid = false;
+  } else clearFieldError('coapplicant_income');
+
+  const la = parseFloat(document.getElementById('loan_amount').value);
+  if (!la || la < 500 || la > 20000) {
+    showFieldError('loan_amount', 'Must be between Rs.5L (500) and Rs.2Cr (20000)');
+    valid = false;
+  } else clearFieldError('loan_amount');
+
+  const lt = parseFloat(document.getElementById('loan_term').value);
+  if (![120, 180, 240, 300, 360].includes(lt)) {
+    showFieldError('loan_term', 'Please select a valid loan tenure');
+    valid = false;
+  } else clearFieldError('loan_term');
+
+  if (valid) {
+    const emi = (la * 1000) / lt;
+    if (emi > ai * 0.9) {
+      showFieldError('loan_amount', `EMI ₹${Math.round(emi).toLocaleString()} exceeds 90% of income. Reduce loan or choose longer tenure.`);
+      valid = false;
+    }
+  }
+
+  return valid;
+}
+
+// ── Submit ──
+async function submitPrediction() {
+  if (!clientValidate()) {
+    showToast('⚠️ Please fix the highlighted errors before submitting.', 'warn');
+    return;
+  }
+
+  const btn = document.getElementById('btn-predict');
+  btn.innerHTML = '<span class="loader"></span> Analyzing...';
+  btn.disabled = true;
+
+  const payload = {
+    gender:             document.getElementById('gender').value,
+    married:            document.getElementById('married').value,
+    dependents:         document.getElementById('dependents').value,
+    education:          document.getElementById('education').value,
+    self_employed:      document.getElementById('self_employed').value,
+    property_area:      document.getElementById('property_area').value,
+    credit_history:     document.getElementById('credit_history').value,
+    applicant_income:   document.getElementById('applicant_income').value,
+    coapplicant_income: document.getElementById('coapplicant_income').value,
+    loan_amount:        document.getElementById('loan_amount').value,
+    loan_term:          document.getElementById('loan_term').value,
+  };
+
+  try {
+    const res  = await fetch('/api/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      data.errors.forEach(e => showToast('❌ ' + e, 'error'));
+    } else {
+      renderResult(data);
+      document.getElementById('result-panel').scrollIntoView({ behavior: 'smooth' });
+    }
+  } catch (err) {
+    showToast('❌ Network error — is the server running?', 'error');
+  }
+
+  btn.innerHTML = '🔍 Predict Loan Eligibility';
+  btn.disabled = false;
+}
+
+// ── Render Result ──
+function renderResult(d) {
+  const panel = document.getElementById('result-panel');
+  panel.style.display = 'block';
+
+  const badge = document.getElementById('res-badge');
+  badge.textContent = d.prediction;
+  badge.className = 'result-badge ' + (d.approved ? 'approved' : 'rejected');
+
+  document.getElementById('res-main').textContent =
+    d.approved
+      ? '✅ Your loan application is likely to be approved!'
+      : '❌ Your loan application is likely to be rejected.';
+
+  document.getElementById('res-sub').textContent =
+    `Approval probability: ${d.approval_prob}%  |  Model confidence: ${d.confidence}%`;
+
+  const bar  = document.getElementById('res-bar');
+  const conf = document.getElementById('res-conf');
+  bar.style.width  = d.approval_prob + '%';
+  bar.className    = 'conf-fill ' + (d.approved ? 'approved' : 'rejected');
+  conf.textContent = d.approval_prob + '%';
+
+  // Derived metrics
+  const drv = d.derived;
+  document.getElementById('res-derived').innerHTML = `
+    <div class="derived-card"><div class="dval">₹${Number(drv.total_income).toLocaleString('en-IN')}</div><div class="dlbl">Total Income/mo</div></div>
+    <div class="derived-card"><div class="dval">₹${Number(drv.emi_monthly).toLocaleString('en-IN')}</div><div class="dlbl">Monthly EMI</div></div>
+    <div class="derived-card"><div class="dval" style="color:${drv.emi_ratio > 50 ? 'var(--danger)' : drv.emi_ratio > 30 ? 'var(--warn)' : 'var(--accent2)'}">${drv.emi_ratio}%</div><div class="dlbl">EMI/Income Ratio</div></div>
+    <div class="derived-card"><div class="dval" style="color:${drv.loan_to_income > 5 ? 'var(--danger)' : drv.loan_to_income > 3 ? 'var(--warn)' : 'var(--accent2)'}">${drv.loan_to_income}×</div><div class="dlbl">Loan-to-Income</div></div>
+  `;
+
+  // Factors
+  const factorsHtml = d.factors.map(f => `
+    <div class="factor-row">
+      <div class="factor-dot ${f.impact}"></div>
+      <div><div class="factor-name">${f.factor}</div><div class="factor-note">${f.note}</div></div>
+    </div>
+  `).join('');
+  document.getElementById('res-factors').innerHTML = factorsHtml;
+}
+
+// ── Dashboard ──
+async function loadDashboard() {
+  const res  = await fetch('/api/stats');
+  const data = await res.json();
+
+  // Hero stats
+  document.getElementById('hs-total').textContent = data.dataset_size.toLocaleString();
+  document.getElementById('hs-rate').textContent  = data.approval_rate + '%';
+  document.getElementById('hs-model').textContent = data.best_model.split(' ')[0];
+
+  // Cards
+  const results = data.model_results;
+  const models  = Object.keys(results);
+  document.getElementById('dash-cards').innerHTML = models.map(m => `
+    <div class="stat-card">
+      <div class="label">${m}</div>
+      <div class="value" style="font-size:1.3rem">${(results[m].auc * 100).toFixed(1)}%</div>
+      <div class="sub">AUC · Acc: ${(results[m].accuracy * 100).toFixed(1)}%</div>
+    </div>
+  `).join('') + `
+    <div class="stat-card">
+      <div class="label">Dataset Size</div>
+      <div class="value">${data.dataset_size.toLocaleString()}</div>
+      <div class="sub">loan applications</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Approval Rate</div>
+      <div class="value" style="color:var(--approved)">${data.approval_rate}%</div>
+      <div class="sub">overall in dataset</div>
+    </div>
+  `;
+
+  // Feature importance bars
+  const fi = data.feature_importances;
+  const keys = Object.keys(fi);
+  const max  = Math.max(...Object.values(fi));
+  document.getElementById('feature-bars').innerHTML = keys.map(k => `
+    <div class="bar-row">
+      <div class="bar-label">${k}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(fi[k]/max*100).toFixed(1)}%"></div></div>
+      <div class="bar-pct">${(fi[k]*100).toFixed(1)}%</div>
+    </div>
+  `).join('');
+
+  // Model comparison
+  const best = data.best_model;
+  document.getElementById('model-compare').innerHTML = models.map(m => `
+    <div class="model-row">
+      <div>
+        <div class="model-name">${m} ${m === best ? '<span class="best-tag">BEST</span>' : ''}</div>
+      </div>
+      <div class="model-metrics">
+        <div class="model-metric"><div class="mv">${(results[m].accuracy*100).toFixed(1)}%</div><div class="ml">Accuracy</div></div>
+        <div class="model-metric"><div class="mv">${(results[m].auc*100).toFixed(1)}%</div><div class="ml">AUC</div></div>
+        <div class="model-metric"><div class="mv">${(results[m].cv_mean*100).toFixed(1)}%</div><div class="ml">CV Score</div></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Fairness ──
+async function loadFairness() {
+  const res  = await fetch('/api/stats');
+  const data = await res.json();
+  const fr   = data.fairness_report;
+  const groups = Object.keys(fr);
+
+  // Table
+  document.getElementById('fairness-body').innerHTML = groups.map(g => {
+    const s = fr[g];
+    const status = s.approval_rate >= 60 ? 'badge-green' : s.approval_rate >= 40 ? 'badge-warn' : 'badge-red';
+    return `
+      <tr>
+        <td><strong>${g}</strong></td>
+        <td>${s.total}</td>
+        <td><span class="${status}">${s.approval_rate}%</span></td>
+        <td>${s.true_positive_rate}%</td>
+        <td>${s.false_positive_rate}%</td>
+        <td>${s.approval_rate >= 60 ? '<span class="badge-green">Fair</span>' : '<span class="badge-warn">Monitor</span>'}</td>
+      </tr>
+    `;
+  }).join('');
+
+  // Bars
+  const maxRate = Math.max(...groups.map(g => fr[g].approval_rate));
+  document.getElementById('fairness-bars').innerHTML = groups.map(g => `
+    <div class="bar-row">
+      <div class="bar-label">${g}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(fr[g].approval_rate/maxRate*100).toFixed(1)}%;background:var(--grad1)"></div></div>
+      <div class="bar-pct">${fr[g].approval_rate}%</div>
+    </div>
+  `).join('');
+
+  // Interpretation
+  const rates = groups.map(g => fr[g].approval_rate);
+  const diff  = Math.max(...rates) - Math.min(...rates);
+  const tprs  = groups.map(g => fr[g].true_positive_rate);
+  const tprDiff = Math.max(...tprs) - Math.min(...tprs);
+
+  let interp = '';
+  if (diff <= 5) {
+    interp += `<div style="color:var(--approved)">✅ <strong>Approval Rate Parity:</strong> The model shows near-equal approval rates across groups (difference: ${diff.toFixed(1)}%). This is excellent.</div>`;
+  } else if (diff <= 10) {
+    interp += `<div style="color:var(--warn)">⚠️ <strong>Approval Rate:</strong> Moderate difference of ${diff.toFixed(1)}% detected across groups. Worth monitoring.</div>`;
+  } else {
+    interp += `<div style="color:var(--danger)">❌ <strong>Approval Rate Bias:</strong> Significant difference of ${diff.toFixed(1)}% detected. Investigate training data for historical bias.</div>`;
+  }
+
+  if (tprDiff <= 10) {
+    interp += `<div style="color:var(--approved); margin-top:0.5rem">✅ <strong>Equal Opportunity:</strong> TPR difference of ${tprDiff.toFixed(1)}% is within acceptable range.</div>`;
+  } else {
+    interp += `<div style="color:var(--danger); margin-top:0.5rem">❌ <strong>Equal Opportunity Gap:</strong> TPR difference of ${tprDiff.toFixed(1)}% — qualified applicants in one group face higher rejection risk.</div>`;
+  }
+
+  document.getElementById('fairness-interpretation').innerHTML = interp;
+}
+
+// ── Reset ──
+function resetForm() {
+  document.getElementById('applicant_income').value  = 50000;
+  document.getElementById('coapplicant_income').value = 0;
+  document.getElementById('loan_amount').value       = 3000;
+  document.getElementById('applicant_income_slider').value   = 50000;
+  document.getElementById('coapplicant_income_slider').value = 0;
+  document.getElementById('loan_amount_slider').value        = 3000;
+
+  updateSliderDisplay('applicant_income', 50000);
+  updateSliderDisplay('coapplicant_income', 0);
+  updateSliderDisplay('loan_amount', 3000);
+
+  // Reset toggles
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected', 'selected-green'));
+  document.querySelector('[data-field="gender"][data-val="Male"]').classList.add('selected');
+  document.querySelector('[data-field="married"][data-val="Yes"]').classList.add('selected');
+  document.querySelector('[data-field="education"][data-val="Graduate"]').classList.add('selected');
+  document.querySelector('[data-field="self_employed"][data-val="No"]').classList.add('selected');
+  document.querySelector('[data-field="credit_history"][data-val="1"]').classList.add('selected', 'selected-green');
+
+  document.getElementById('gender').value        = 'Male';
+  document.getElementById('married').value       = 'Yes';
+  document.getElementById('education').value     = 'Graduate';
+  document.getElementById('self_employed').value = 'No';
+  document.getElementById('credit_history').value = '1';
+
+  // Reset segments
+  ['dependents', 'property_area', 'loan_term'].forEach(f => {
+    document.querySelectorAll(`#seg-${f} .seg-btn`).forEach(b => b.classList.remove('selected'));
+  });
+  document.querySelector('#seg-dependents [data-val="0"]').classList.add('selected');
+  document.getElementById('dependents').value = '0';
+  document.querySelector('#seg-property_area [data-val="Semiurban"]').classList.add('selected');
+  document.getElementById('property_area').value = 'Semiurban';
+  document.querySelector('#seg-loan_term [data-val="360"]').classList.add('selected');
+  document.getElementById('loan_term').value = '360';
+
+  ['applicant_income','coapplicant_income','loan_amount','loan_term','gender','married',
+   'dependents','education','self_employed','property_area','credit_history'].forEach(f => {
+    clearFieldError(f);
+  });
+
+  document.getElementById('result-panel').style.display = 'none';
+  updatePreview();
+  showToast('↺ Form reset to defaults', 'info');
+}
+
+// ── Toast ──
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = type === 'error' ? 'var(--danger)' : type === 'warn' ? 'var(--warn)' : 'var(--border)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── Init ──
+(async function init() {
+  try {
+    const res  = await fetch('/api/stats');
+    const data = await res.json();
+    document.getElementById('hs-total').textContent = data.dataset_size.toLocaleString();
+    document.getElementById('hs-rate').textContent  = data.approval_rate + '%';
+    document.getElementById('hs-model').textContent = (data.best_model || '').split(' ')[0] || 'RF';
+  } catch(e) {}
+  updatePreview();
+})();
+</script>
+</body>
+</html>
