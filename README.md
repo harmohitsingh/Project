@@ -1,3 +1,5 @@
+Live App Link Render: https://fair-loan-predictor.onrender.com
+
 # 🏦 Fair Loan Predictor — SDG 10: Reduced Inequalities
 
 An AI-powered home loan eligibility predictor built with Machine Learning and Flask.  
