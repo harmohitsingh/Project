@@ -201,10 +201,10 @@ def predict():
     else:
         factors.append({"factor": "Loan-to-Income Ratio", "impact": "negative", "note": f"Ratio of {loan_to_income:.1f} is high (> 5)"})
 
-    if total_income > 8000:
-        factors.append({"factor": "Combined Income", "impact": "positive", "note": f"Strong combined income of ₹{total_income:,.0f}"})
-    elif total_income < 3000:
-        factors.append({"factor": "Combined Income", "impact": "negative", "note": f"Low combined income of ₹{total_income:,.0f}"})
+    if total_income > 80000:
+        factors.append({"factor": "Combined Income", "impact": "positive", "note": f"Strong combined income of Rs.{total_income:,.0f}"})
+    elif total_income < 20000:
+        factors.append({"factor": "Combined Income", "impact": "negative", "note": f"Low combined income of Rs.{total_income:,.0f}"})
 
     if data["education"] == "Graduate":
         factors.append({"factor": "Education", "impact": "positive", "note": "Graduate status improves approval likelihood"})
@@ -258,13 +258,15 @@ def stats():
 
 
 # ─────────────────────────────────────────────────────────────
-# Entry Point
+# Entry Point — load artifacts at module level for gunicorn
 # ─────────────────────────────────────────────────────────────
+
+if os.path.exists("model/model.pkl"):
+    load_artifacts()
 
 if __name__ == "__main__":
     if not os.path.exists("model/model.pkl"):
         print("[ERROR] Model not found. Run: python train_model.py")
         exit(1)
-    load_artifacts()
-    print(f"\n  Fair Loan Predictor running → http://127.0.0.1:5000\n")
-    app.run(debug=True, port=5000)
+    print("\n  Fair Loan Predictor running at http://127.0.0.1:5000\n")
+    app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
